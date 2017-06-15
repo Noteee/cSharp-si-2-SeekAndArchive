@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,10 +22,16 @@ namespace SeekAndArchive
             string filePath = searchFile();
 
             string[] tokens = filePath.Split('\\');
+            
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
-            string destinationPath = "C:\\Users\\lugos\\Desktop" + "\\" + "backup_" + tokens.Last();
+            string destinationPath = desktopPath + "\\" + "backup_" + tokens.Last();
 
             string text = File.ReadAllText(@filePath);
+
+            string compressedFileDestination = desktopPath + "\\"+nameOfTheFile+".gz";
+
+
 
             string searchFile()
             {
@@ -38,6 +45,16 @@ namespace SeekAndArchive
                     }
                 }
                 return searchedFileName;
+            }
+
+            void BegingCompression()
+            {
+                var bytes = File.ReadAllBytes(filePath);
+                using (FileStream fs = new FileStream(compressedFileDestination, FileMode.CreateNew))
+                using (GZipStream zipStream = new GZipStream(fs, CompressionMode.Compress, false))
+                {
+                    zipStream.Write(bytes, 0, bytes.Length);
+                }
             }
 
 
@@ -57,6 +74,11 @@ namespace SeekAndArchive
 
                 if (hash != System.Text.Encoding.UTF8.GetString(GetFileHash(filePath)))
                 {
+                    if (File.Exists(compressedFileDestination))
+                    {
+                        File.Delete(compressedFileDestination);
+                    }
+                    BegingCompression();
                     hash = System.Text.Encoding.UTF8.GetString(GetFileHash(filePath));
                     File.WriteAllText(destinationPath, text);
                     text = File.ReadAllText(filePath);
